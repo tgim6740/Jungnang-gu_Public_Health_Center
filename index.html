@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
-    <title>지역 보건소 실시간 혼잡도 안내</title>
+    <title>중랑구 보건소 실시간 혼잡도 안내</title>
     <style>
         * {
             margin: 0;
@@ -199,7 +199,7 @@
 
     <div class="container notranslate" translate="no">
         <h1>🏥 지역 보건소 실시간 혼잡도</h1>
-        <div class="time-info" id="current-time-display">시계 불러오는 중...</div>
+        <div class="time-info" id="current-time-display">현재 시각 확인 중...</div>
 
         <div class="notice-box">
             <p class="notice-red">⚠️ 주말 및 공휴일은 보건소 휴무입니다.</p>
@@ -208,7 +208,7 @@
 
         <div id="status-box" class="status-card status-closed">
             <div class="status-title" id="status-text">준비 중</div>
-            <div class="status-desc" id="status-desc">데이터를 계산하고 있습니다.</div>
+            <div class="status-desc" id="status-desc">잠시만 기다려주세요.</div>
         </div>
 
         <div class="data-details">
@@ -239,14 +239,13 @@
                     <option value="8">17:00 ~ 18:00</option>
                 </select>
             </div>
-            <button class="btn-search" id="btn-search">조회하기</button>
+            <button class="btn-search" id="btn-search" onclick="handleSearch()">조회하기</button>
         </div>
 
         <footer>* 본 웹사이트는 지역 보건소 이용 편의를 위한 참고용 안내 서비스입니다.</footer>
     </div>
 
     <script>
-        // 시간대 설정
         var timeSlots = [
             { label: "09:00 ~ 10:00", rate: "65% ~ 70%" },
             { label: "10:00 ~ 11:00", rate: "70% ~ 75%" },
@@ -259,7 +258,6 @@
             { label: "17:00 ~ 18:00", rate: "45% ~ 50%" }
         ];
 
-        // 보건소 데이터
         var healthCenterData = {
             "월요일": ["혼잡", "혼잡", "조금 혼잡", "점심시간", "조금 혼잡", "보통", "보통", "조금 여유", "여유"],
             "화요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
@@ -285,17 +283,21 @@
         }
 
         function renderStatus(statusText, descText, accuracy, cssClass, labelName) {
-            var box = document.getElementById('status-box');
-            var txt = document.getElementById('status-text');
-            var desc = document.getElementById('status-desc');
-            var rate = document.getElementById('accuracy-rate');
-            var period = document.getElementById('info-period');
+            try {
+                var box = document.getElementById('status-box');
+                var txt = document.getElementById('status-text');
+                var desc = document.getElementById('status-desc');
+                var rate = document.getElementById('accuracy-rate');
+                var period = document.getElementById('info-period');
 
-            if (box) box.className = "status-card " + cssClass;
-            if (txt) txt.innerText = statusText;
-            if (desc) desc.innerText = descText;
-            if (rate) rate.innerText = accuracy;
-            if (period) period.innerText = labelName;
+                if (box) box.className = "status-card " + cssClass;
+                if (txt) txt.innerText = statusText;
+                if (desc) desc.innerText = descText;
+                if (rate) rate.innerText = accuracy;
+                if (period) period.innerText = labelName;
+            } catch (e) {
+                console.error("화면 업데이트 중 오류 발생:", e);
+            }
         }
 
         function displayByStatus(status, accuracy, labelName) {
@@ -359,4 +361,43 @@
             var idx = getCurrentIndex(h, m);
 
             if (idx === -1) {
-                renderStatus("운영 종료", "보건소 진료 업무 시간이 아닙니다. (09:00~18:00)", "-",
+                renderStatus("운영 종료", "보건소 진료 업무 시간이 아닙니다. (09:00~18:00)", "-", "status-closed", "운영 시간 외");
+                return;
+            }
+
+            var status = healthCenterData[dayStr][idx];
+            var accuracy = timeSlots[idx].rate;
+            var labelName = dayStr + " " + timeSlots[idx].label;
+
+            displayByStatus(status, accuracy, labelName);
+        }
+
+        function handleSearch() {
+            var daySelect = document.getElementById('select-day');
+            var timeSelect = document.getElementById('select-time');
+
+            if (!daySelect || !timeSelect) return;
+
+            var dayVal = daySelect.value;
+            var timeIdx = parseInt(timeSelect.value, 10);
+
+            if (isNaN(timeIdx) || !healthCenterData[dayVal]) return;
+
+            isManualMode = true;
+
+            var status = healthCenterData[dayVal][timeIdx];
+            var accuracy = timeSlots[timeIdx].rate;
+            var labelName = dayVal + " " + timeSlots[timeIdx].label;
+
+            var timeDisplay = document.getElementById('current-time-display');
+            if (timeDisplay) timeDisplay.innerText = "🔍 선택 조회: " + labelName;
+
+            displayByStatus(status, accuracy, labelName);
+        }
+
+        // 실행 보장 함수
+        updateRealtime();
+        setInterval(updateRealtime, 1000);
+    </script>
+</body>
+</html>
