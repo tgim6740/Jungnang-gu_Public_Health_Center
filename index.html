@@ -41,9 +41,10 @@
 
         .time-info {
             font-size: 1.05rem;
-            color: #7f8c8d;
+            color: #2c3e50;
+            font-weight: bold;
             margin-bottom: 20px;
-            padding: 8px 12px;
+            padding: 8px 14px;
             background-color: #edf2f7;
             border-radius: 8px;
             display: inline-block;
@@ -203,7 +204,7 @@
 
     <div class="container notranslate" translate="no">
         <h1>🏥 지역 보건소 실시간 혼잡도</h1>
-        <div class="time-info" id="current-time-display">시간 계산 중...</div>
+        <div class="time-info" id="current-time-display">현재 시각 확인 중...</div>
 
         <div class="notice-box">
             <p class="notice-red">⚠️ 주말 및 공휴일은 보건소 휴무입니다.</p>
@@ -211,8 +212,8 @@
         </div>
 
         <div id="status-box" class="status-card status-closed">
-            <div class="status-title" id="status-text">계산 중</div>
-            <div class="status-desc" id="status-desc">데이터를 불러오는 중입니다.</div>
+            <div class="status-title" id="status-text">불러오는 중</div>
+            <div class="status-desc" id="status-desc">잠시만 기다려주세요.</div>
         </div>
 
         <div class="data-details">
@@ -250,6 +251,7 @@
     </div>
 
     <script>
+        // 시간대 레이블 및 예측 확률
         const timeSlots = [
             { label: "09:00 ~ 10:00", rate: "65% ~ 70%" },
             { label: "10:00 ~ 11:00", rate: "70% ~ 75%" },
@@ -262,6 +264,7 @@
             { label: "17:00 ~ 18:00", rate: "45% ~ 50%" }
         ];
 
+        // 보건소 데이터
         const healthCenterData = {
             "월요일": ["혼잡", "혼잡", "조금 혼잡", "점심시간", "조금 혼잡", "보통", "보통", "조금 여유", "여유"],
             "화요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
@@ -269,6 +272,9 @@
             "목요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
             "금요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "조금 혼잡", "보통", "조금 여유", "여유", "여유"]
         };
+
+        // 현재 수동 검색 상태 모드 체크 변수
+        let isManualSearch = false;
 
         function getCurrentTimeIndex(hours, minutes) {
             const timeInMinutes = hours * 60 + minutes;
@@ -287,12 +293,9 @@
         }
 
         function updateCongestion() {
+            if (isManualSearch) return; // 수동 조회 시 실시간 자동 업데이트 덮어쓰기 방지
+
             const now = new Date();
             const weekDays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
             const currentDayStr = weekDays[now.getDay()];
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-
-            const timeStr = `${currentDayStr} ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            const timeDisplay = document.getElementById('current-time-display');
-            if (timeDisplay) timeDisplay.innerText = `현재 시각:
+            const hours = now.
