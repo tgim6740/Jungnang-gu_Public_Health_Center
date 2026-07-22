@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="notranslate" translate="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
     <title>지역 보건소 실시간 혼잡도 안내</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Malgun Gothic', sans-serif;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
 
         body {
@@ -198,9 +199,9 @@
         }
     </style>
 </head>
-<body>
+<body class="notranslate" translate="no">
 
-    <div class="container">
+    <div class="container notranslate" translate="no">
         <h1>🏥 지역 보건소 실시간 혼잡도</h1>
         <div class="time-info" id="current-time-display">시간 계산 중...</div>
 
@@ -249,7 +250,6 @@
     </div>
 
     <script>
-        // 1. 시간대 레이블 및 일치 확률 정의
         const timeSlots = [
             { label: "09:00 ~ 10:00", rate: "65% ~ 70%" },
             { label: "10:00 ~ 11:00", rate: "70% ~ 75%" },
@@ -262,7 +262,6 @@
             { label: "17:00 ~ 18:00", rate: "45% ~ 50%" }
         ];
 
-        // 2. 보건소 요일/시간대별 데이터
         const healthCenterData = {
             "월요일": ["혼잡", "혼잡", "조금 혼잡", "점심시간", "조금 혼잡", "보통", "보통", "조금 여유", "여유"],
             "화요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
@@ -271,4 +270,29 @@
             "금요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "조금 혼잡", "보통", "조금 여유", "여유", "여유"]
         };
 
-        // 3. 현재
+        function getCurrentTimeIndex(hours, minutes) {
+            const timeInMinutes = hours * 60 + minutes;
+
+            if (timeInMinutes >= 540 && timeInMinutes < 600) return 0;  // 09:00~10:00
+            if (timeInMinutes >= 600 && timeInMinutes < 660) return 1;  // 10:00~11:00
+            if (timeInMinutes >= 660 && timeInMinutes < 720) return 2;  // 11:00~12:00
+            if (timeInMinutes >= 720 && timeInMinutes < 780) return 3;  // 12:00~13:00
+            if (timeInMinutes >= 780 && timeInMinutes < 840) return 4;  // 13:00~14:00
+            if (timeInMinutes >= 840 && timeInMinutes < 900) return 5;  // 14:00~15:00
+            if (timeInMinutes >= 900 && timeInMinutes < 960) return 6;  // 15:00~16:00
+            if (timeInMinutes >= 960 && timeInMinutes < 1020) return 7; // 16:00~17:00
+            if (timeInMinutes >= 1020 && timeInMinutes < 1080) return 8;// 17:00~18:00
+
+            return -1; // 운영 외 시간
+        }
+
+        function updateCongestion() {
+            const now = new Date();
+            const weekDays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+            const currentDayStr = weekDays[now.getDay()];
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            const timeStr = `${currentDayStr} ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            const timeDisplay = document.getElementById('current-time-display');
+            if (timeDisplay) timeDisplay.innerText = `현재 시각:
