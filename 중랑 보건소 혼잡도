@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중랑구 보건소 실시간 혼잡도 안내</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Malgun Gothic', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .time-info {
+            font-size: 1.05rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            padding: 8px 12px;
+            background-color: #edf2f7;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        /* 메인 유의사항 알림 */
+        .notice-box {
+            background-color: #fff5f5;
+            border: 1px solid #feb2b2;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .notice-red {
+            color: #e53e3e;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .notice-gray {
+            color: #718096;
+            font-size: 0.8rem;
+        }
+
+        /* 혼잡도 카드 스타일 */
+        .status-card {
+            padding: 25px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        /* 5단계 혼잡도 색상 스타일 */
+        .status-crowded { /* 혼잡: 빨강 */
+            background-color: #ffebee;
+            color: #c62828;
+            border: 2px solid #ffcdd2;
+        }
+        .status-slightly-crowded { /* 조금 혼잡: 주황 */
+            background-color: #fff3e0;
+            color: #e65100;
+            border: 2px solid #ffe0b2;
+        }
+        .status-normal { /* 보통: 노랑 */
+            background-color: #fffde7;
+            color: #f57f17;
+            border: 2px solid #fff59d;
+        }
+        .status-slightly-smooth { /* 조금 여유: 초록 */
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #a5d6a7;
+        }
+        .status-smooth { /* 여유: 파랑 */
+            background-color: #e3f2fd;
+            color: #1565c0;
+            border: 2px solid #bbdefb;
+        }
+        .status-closed { /* 운영 외/휴무: 회색 */
+            background-color: #f5f5f5;
+            color: #616161;
+            border: 2px solid #e0e0e0;
+        }
+
+        .status-title {
+            font-size: 2.3rem;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .status-desc {
+            font-size: 1rem;
+        }
+
+        /* 상세 정보 표시 영역 */
+        .data-details {
+            text-align: left;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            border-left: 4px solid #3498db;
+            margin-bottom: 25px;
+        }
+
+        .data-details p {
+            margin-bottom: 6px;
+        }
+        .data-details p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        /* 수동 선택 영역 */
+        .search-section {
+            border-top: 1px dashed #bdc3c7;
+            padding-top: 25px;
+            text-align: left;
+        }
+
+        .search-section h3 {
+            font-size: 1.1rem;
+            color: #34495e;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .select-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .btn-search {
+            width: 100%;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-search:hover {
+            background-color: #2980b9;
+        }
+
+        footer {
+            margin-top: 25px;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🏥 지역 보건소 실시간 혼잡도</h1>
+        <div class="time-info" id="current-time-display">시간 계산 중...</div>
+
+        <div class="notice-box">
+            <p class="notice-red">⚠️ 주말 및 공휴일은 보건소 휴무입니다.</p>
+            <p class="notice-gray">ℹ️ 본 정보는 과거 통계 기반 예측치이며, 실제 대기상황은 달라질 수 있으므로 단순 참고용으로 활용해 주세요.</p>
+        </div>
+
+        <div id="status-box" class="status-card status-closed">
+            <div class="status-title" id="status-text">계산 중</div>
+            <div class="status-desc" id="status-desc">데이터를 불러오는 중입니다.</div>
+        </div>
+
+        <div class="data-details">
+            <p>📊 기준 시간: <span id="info-period" class="highlight">현재 시간대</span></p>
+            <p>🎯 예측 일치 확률: <span id="accuracy-rate" class="highlight">-%</span></p>
+            <p>⏰ 보건소 운영: 평일 09:00 ~ 18:00 (점심 12:00 ~ 13:00)</p>
+        </div>
+
+        <div class="search-section">
+            <h3>🔍 다른 시간대 조회하기</h3>
+            <div class="select-box">
+                <select id="select-day">
+                    <option value="월요일">월요일</option>
+                    <option value="화요일">화요일</option>
+                    <option value="수요일">수요일</option>
+                    <option value="목요일">목요일</option>
+                    <option value="금요일">금요일</option>
+                </select>
+                <select id="select-time">
+                    <option value="0">09:00 ~ 10:00</option>
+                    <option value="1">10:00 ~ 11:00</option>
+                    <option value="2">11:00 ~ 12:00</option>
+                    <option value="3">12:00 ~ 13:00 (점심시간)</option>
+                    <option value="4">13:00 ~ 14:00</option>
+                    <option value="5">14:00 ~ 15:00</option>
+                    <option value="6">15:00 ~ 16:00</option>
+                    <option value="7">16:00 ~ 17:00</option>
+                    <option value="8">17:00 ~ 18:00</option>
+                </select>
+            </div>
+            <button class="btn-search" onclick="checkSelectedTime()">조회하기</button>
+        </div>
+
+        <footer>* 본 웹사이트는 지역 보건소 이용 편의를 위한 참고용 안내 서비스입니다.</footer>
+    </div>
+
+    <script>
+        // 1. 시간대 레이블 및 일치 확률 정의
+        const timeSlots = [
+            { label: "09:00 ~ 10:00", rate: "65% ~ 70%" },
+            { label: "10:00 ~ 11:00", rate: "70% ~ 75%" },
+            { label: "11:00 ~ 12:00", rate: "50% ~ 55%" },
+            { label: "12:00 ~ 13:00", rate: "-" }, // 점심시간
+            { label: "13:00 ~ 14:00", rate: "55% ~ 60%" },
+            { label: "14:00 ~ 15:00", rate: "65% ~ 70%" },
+            { label: "15:00 ~ 16:00", rate: "65% ~ 70%" },
+            { label: "16:00 ~ 17:00", rate: "45% ~ 50%" },
+            { label: "17:00 ~ 18:00", rate: "45% ~ 50%" }
+        ];
+
+        // 2. 보건소 요일/시간대별 데이터 구조화
+        // 상태 코드: "혼잡", "조금 혼잡", "보통", "조금 여유", "여유", "점심시간"
+        const healthCenterData = {
+            "월요일": ["혼잡", "혼잡", "조금 혼잡", "점심시간", "조금 혼잡", "보통", "보통", "조금 여유", "여유"],
+            "화요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
+            "수요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
+            "목요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
+            "금요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "조금 혼잡", "보통", "조금 여유", "여유", "여유"]
+        };
+
+        // 3. 현재 시각 기준 시간대 인덱스 반환 함수
+        function getCurrentTimeIndex(hours, minutes) {
+            const timeInMinutes = hours * 60 + minutes;
+
+            if (timeInMinutes >= 540 && timeInMinutes < 600) return 0;  // 09:00 ~ 10:00
+            if (timeInMinutes >= 600 && timeInMinutes < 660) return 1;  // 10:00 ~ 11:00
+            if (timeInMinutes >= 660 && timeInMinutes < 720) return 2;  // 11:00 ~ 12:00
+            if (timeInMinutes >= 720 && timeInMinutes < 780) return 3;  // 12:00 ~ 13:00 (점심)
+            if (timeInMinutes >= 780 && timeInMinutes < 840) return 4;  // 13:00 ~ 14:00
+            if (timeInMinutes >= 840 && timeInMinutes < 900) return 5;  // 14:00 ~ 15:00
+            if (timeInMinutes >= 900 && timeInMinutes < 960) return 6;  // 15:00 ~ 16:00
+            if (timeInMinutes >= 960 && timeInMinutes < 1020) return 7; // 16:00 ~ 17:00
+            if (timeInMinutes >= 1020 && timeInMinutes < 1080) return 8;// 17:00 ~ 18:00
+
+            return -1; // 운영 외 시간 (09:00 이전 또는 18:00 이후)
+        }
+
+        // 4. 실시간 혼잡도 측정 및 업데이트
+        function updateCongestion() {
+            const now = new Date();
+            const weekDays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+            const currentDayStr = weekDays[now.getDay()];
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            const timeStr = `${currentDayStr} ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            document.getElementById('current-time-display').innerText = `현재 시각: ${timeStr}`;
+
+            // 주말 예외 처리
+            if (currentDayStr === "토요일" || currentDayStr === "일요일") {
+                showStatus("휴 무", "주말에는 보건소를 운영하지 않습니다.", "-", "status-closed", "주말 (휴무)");
+                return;
+            }
+
+            const timeIndex = getCurrentTimeIndex(hours, minutes);
+
+            // 운영 시간 외 처리
+            if (timeIndex === -1) {
+                showStatus("운영 종료", "보건소 진료 및 업무 운영 시간이 아닙니다. (09:00~18:00)", "-", "status-closed", "운영 시간 외");
+                return;
+            }
+
+            const status = healthCenterData[currentDayStr][timeIndex];
+            const accuracy = timeSlots[timeIndex].rate;
+            const label = `${currentDayStr} ${timeSlots[timeIndex].label}`;
+
+            displayStatusByLevel(status, accuracy, label);
+        }
+
+        // 5. 사용자가 직접 수동 조회
+        function checkSelectedTime() {
+            const selectedDay = document.getElementById('select-day').value;
+            const selectedIndex = parseInt(document.getElementById('select-time').value);
+
+            const status = healthCenterData[selectedDay][selectedIndex];
+            const accuracy = timeSlots[selectedIndex].rate;
+            const label = `${selectedDay} ${timeSlots[selectedIndex].label}`;
+
+            document.getElementById('current-time-display').innerText = `🔍 선택 조회: ${selectedDay} ${timeSlots[selectedIndex].label}`;
+            displayStatusByLevel(status, accuracy, label);
+        }
+
+        // 6. 혼잡도 단계별 색상 및 문구 매칭
+        function displayStatusByLevel(status, accuracy, label) {
+            let desc = "";
+            let cssClass = "";
+
+            switch (status) {
+                case "혼잡":
+                    desc = "방문자가 매우 많아 대기 시간이 길어질 수 있습니다. 🔴";
+                    cssClass = "status-crowded";
+                    break;
+                case "조금 혼잡":
+                    desc = "대기 인원이 다소 있어 약간의 대기가 발생합니다. 🟠";
+                    cssClass = "status-slightly-crowded";
+                    break;
+                case "보통":
+                    desc = "대기 줄이 적어 무난하게 이용 가능합니다. 🟡";
+                    cssClass = "status
