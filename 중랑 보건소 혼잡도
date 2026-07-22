@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>중랑구 보건소 실시간 혼잡도 안내</title>
+    <title>지역 보건소 실시간 혼잡도 안내</title>
     <style>
         * {
             margin: 0;
@@ -254,7 +254,7 @@
             { label: "09:00 ~ 10:00", rate: "65% ~ 70%" },
             { label: "10:00 ~ 11:00", rate: "70% ~ 75%" },
             { label: "11:00 ~ 12:00", rate: "50% ~ 55%" },
-            { label: "12:00 ~ 13:00", rate: "-" }, // 점심시간
+            { label: "12:00 ~ 13:00", rate: "-" },
             { label: "13:00 ~ 14:00", rate: "55% ~ 60%" },
             { label: "14:00 ~ 15:00", rate: "65% ~ 70%" },
             { label: "15:00 ~ 16:00", rate: "65% ~ 70%" },
@@ -262,8 +262,7 @@
             { label: "17:00 ~ 18:00", rate: "45% ~ 50%" }
         ];
 
-        // 2. 보건소 요일/시간대별 데이터 구조화
-        // 상태 코드: "혼잡", "조금 혼잡", "보통", "조금 여유", "여유", "점심시간"
+        // 2. 보건소 요일/시간대별 데이터
         const healthCenterData = {
             "월요일": ["혼잡", "혼잡", "조금 혼잡", "점심시간", "조금 혼잡", "보통", "보통", "조금 여유", "여유"],
             "화요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "보통", "여유", "여유", "조금 여유", "여유"],
@@ -272,82 +271,4 @@
             "금요일": ["조금 혼잡", "보통", "조금 여유", "점심시간", "조금 혼잡", "보통", "조금 여유", "여유", "여유"]
         };
 
-        // 3. 현재 시각 기준 시간대 인덱스 반환 함수
-        function getCurrentTimeIndex(hours, minutes) {
-            const timeInMinutes = hours * 60 + minutes;
-
-            if (timeInMinutes >= 540 && timeInMinutes < 600) return 0;  // 09:00 ~ 10:00
-            if (timeInMinutes >= 600 && timeInMinutes < 660) return 1;  // 10:00 ~ 11:00
-            if (timeInMinutes >= 660 && timeInMinutes < 720) return 2;  // 11:00 ~ 12:00
-            if (timeInMinutes >= 720 && timeInMinutes < 780) return 3;  // 12:00 ~ 13:00 (점심)
-            if (timeInMinutes >= 780 && timeInMinutes < 840) return 4;  // 13:00 ~ 14:00
-            if (timeInMinutes >= 840 && timeInMinutes < 900) return 5;  // 14:00 ~ 15:00
-            if (timeInMinutes >= 900 && timeInMinutes < 960) return 6;  // 15:00 ~ 16:00
-            if (timeInMinutes >= 960 && timeInMinutes < 1020) return 7; // 16:00 ~ 17:00
-            if (timeInMinutes >= 1020 && timeInMinutes < 1080) return 8;// 17:00 ~ 18:00
-
-            return -1; // 운영 외 시간 (09:00 이전 또는 18:00 이후)
-        }
-
-        // 4. 실시간 혼잡도 측정 및 업데이트
-        function updateCongestion() {
-            const now = new Date();
-            const weekDays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-            const currentDayStr = weekDays[now.getDay()];
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-
-            const timeStr = `${currentDayStr} ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            document.getElementById('current-time-display').innerText = `현재 시각: ${timeStr}`;
-
-            // 주말 예외 처리
-            if (currentDayStr === "토요일" || currentDayStr === "일요일") {
-                showStatus("휴 무", "주말에는 보건소를 운영하지 않습니다.", "-", "status-closed", "주말 (휴무)");
-                return;
-            }
-
-            const timeIndex = getCurrentTimeIndex(hours, minutes);
-
-            // 운영 시간 외 처리
-            if (timeIndex === -1) {
-                showStatus("운영 종료", "보건소 진료 및 업무 운영 시간이 아닙니다. (09:00~18:00)", "-", "status-closed", "운영 시간 외");
-                return;
-            }
-
-            const status = healthCenterData[currentDayStr][timeIndex];
-            const accuracy = timeSlots[timeIndex].rate;
-            const label = `${currentDayStr} ${timeSlots[timeIndex].label}`;
-
-            displayStatusByLevel(status, accuracy, label);
-        }
-
-        // 5. 사용자가 직접 수동 조회
-        function checkSelectedTime() {
-            const selectedDay = document.getElementById('select-day').value;
-            const selectedIndex = parseInt(document.getElementById('select-time').value);
-
-            const status = healthCenterData[selectedDay][selectedIndex];
-            const accuracy = timeSlots[selectedIndex].rate;
-            const label = `${selectedDay} ${timeSlots[selectedIndex].label}`;
-
-            document.getElementById('current-time-display').innerText = `🔍 선택 조회: ${selectedDay} ${timeSlots[selectedIndex].label}`;
-            displayStatusByLevel(status, accuracy, label);
-        }
-
-        // 6. 혼잡도 단계별 색상 및 문구 매칭
-        function displayStatusByLevel(status, accuracy, label) {
-            let desc = "";
-            let cssClass = "";
-
-            switch (status) {
-                case "혼잡":
-                    desc = "방문자가 매우 많아 대기 시간이 길어질 수 있습니다. 🔴";
-                    cssClass = "status-crowded";
-                    break;
-                case "조금 혼잡":
-                    desc = "대기 인원이 다소 있어 약간의 대기가 발생합니다. 🟠";
-                    cssClass = "status-slightly-crowded";
-                    break;
-                case "보통":
-                    desc = "대기 줄이 적어 무난하게 이용 가능합니다. 🟡";
-                    cssClass = "status
+        // 3. 현재
